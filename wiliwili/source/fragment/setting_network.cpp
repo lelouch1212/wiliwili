@@ -2,6 +2,11 @@
 // Created by fang on 2022/9/19.
 //
 
+#include <borealis/core/i18n.hpp>
+#include <borealis/core/application.hpp>
+#include <borealis/core/thread.hpp>
+#include <borealis/views/header.hpp>
+
 #include "fragment/setting_network.hpp"
 #include "bilibili.h"
 #include "bilibili/result/home_result.h"
@@ -25,15 +30,21 @@ SettingNetwork::SettingNetwork() {
         labelWIFI->setText("hints/off"_i18n);
     }
     labelIP->setText(brls::Application::getPlatform()->getIpAddress());
+#ifdef PS4
+    // 因为 PS4 用户通常会设置屏蔽用的 DNS，可能存在无法解析部分域名的问题，
+    // 所以 wiliwili 使用自定义的 DNS 服务器来请求网络
+    labelDNS->setText(primaryDNSStr + "\n" + secondaryDNSStr);
+#else
     labelDNS->setText(brls::Application::getPlatform()->getDnsServer());
+#endif
 
     headerTest->setSubtitle(APPVersion::instance().git_tag);
 }
 
 void SettingNetwork::networkTest() {
     ASYNC_RETAIN
-    bilibili::BilibiliClient::get_recommend(
-        1, 1,
+    BILI::get_recommend(
+        1, 1, 0, "V1", 3, 4,
         [ASYNC_TOKEN](const auto& result) {
             brls::sync([ASYNC_TOKEN]() {
                 ASYNC_RELEASE
@@ -41,7 +52,7 @@ void SettingNetwork::networkTest() {
                 this->labelTest1->setText("hints/success"_i18n);
             });
         },
-        [ASYNC_TOKEN](const std::string& error) {
+        [ASYNC_TOKEN](BILI_ERR) {
             brls::sync([ASYNC_TOKEN]() {
                 ASYNC_RELEASE
                 this->labelTest1->setTextColor(nvgRGB(199, 84, 80));
@@ -52,19 +63,18 @@ void SettingNetwork::networkTest() {
 
 void SettingNetwork::getUnixTime() {
     // 设置系统时间
-    this->labelSysTime->setText(
-        wiliwili::sec2FullDate(wiliwili::getUnixTime()));
+    this->labelSysTime->setText(wiliwili::sec2FullDate(wiliwili::getUnixTime()));
 
     // 获取网络时间
     ASYNC_RETAIN
-    bilibili::BilibiliClient::get_unix_time(
+    BILI::get_unix_time(
         [ASYNC_TOKEN](const bilibili::UnixTimeResult& result) {
             brls::sync([ASYNC_TOKEN, result]() {
                 ASYNC_RELEASE
                 this->labelNetTime->setText(wiliwili::sec2FullDate(result.now));
             });
         },
-        [ASYNC_TOKEN](const std::string& error) {
+        [ASYNC_TOKEN](BILI_ERR) {
             brls::sync([ASYNC_TOKEN]() {
                 ASYNC_RELEASE
                 this->labelNetTime->setTextColor(nvgRGB(199, 84, 80));
@@ -73,8 +83,6 @@ void SettingNetwork::getUnixTime() {
         });
 }
 
-SettingNetwork::~SettingNetwork() {
-    brls::Logger::debug("Fragment SettingNetwork: delete");
-}
+SettingNetwork::~SettingNetwork() { brls::Logger::debug("Fragment SettingNetwork: delete"); }
 
 brls::View* SettingNetwork::create() { return new SettingNetwork(); }

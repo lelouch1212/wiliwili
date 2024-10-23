@@ -2,3 +2,8 @@ pkg/
 src/
 switch-*
 libmpv-*
+!switch-forwarder
+switch-forwarder/wiliwili*
+!switch-forwarder/wiliwili.json
+*.nsp
+*.suprx
