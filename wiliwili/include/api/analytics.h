@@ -9,8 +9,12 @@
 #include <vector>
 #include <mutex>
 
-#include "utils/singleton.hpp"
+#include "borealis/core/timer.hpp"
+#include "borealis/core/singleton.hpp"
 #include "bilibili/result/analytics_result.h"
+
+// Uncomment this line to disable Google Analytics
+//#define NO_GA
 
 namespace analytics {
 
@@ -18,41 +22,47 @@ namespace analytics {
 #define STR(x) STR_IMPL(x)
 
 #ifdef ANALYTICS
+// custom Google Analytics id/key
 const std::string GA_ID  = STR(ANALYTICS_ID);
 const std::string GA_KEY = STR(ANALYTICS_KEY);
 const std::string GA_URL = "https://www.google-analytics.com/mp/collect";
 #else
-const std::string GA_ID  = "";
-const std::string GA_KEY = "";
-const std::string GA_URL = "http://httpbin.org/post";
+// default Google Analytics id/key
+const std::string GA_ID  = "G-YE1PE9VDBY";
+const std::string GA_KEY = "fmMCjnX1Sam815PDdrOPQA";
+const std::string GA_URL = "https://www.google-analytics.com/mp/collect";
 #endif
 
-#ifdef ANALYTICS
 #ifdef NO_GA
-#define GA(a) void(a);
+#define GA(a, ...) void(a);
+#define GA_SEND void();
 #else
-#define GA(a) analytics::Analytics::instance().report(a);
+#define GA(a, ...) analytics::Analytics::instance().report(a, ##__VA_ARGS__);
+#define GA_SEND analytics::Analytics::instance().send();
 #endif /* NO_GA */
-#else
-#define GA(a) void(a);
-#endif /* ANALYTICS */
 
 class Event;
 class Package;
 
-class Analytics : public Singleton<Analytics> {
+class Analytics : public brls::Singleton<Analytics> {
 public:
+    const size_t REPORT_MAX_NUM = 25;
     std::vector<Event> events;
     std::mutex events_mutex;
-    std::string app_version = "";
+    brls::RepeatingTimer reportTimer;
+    std::string app_version;
+    std::string client_id;
 
-    void report(Event event);
+    void report(const Event& event);
 
-    void report(std::string event);
+    void report(const std::string& event);
+
+    void report(const std::string& event, const Params& params);
 
     void send();
 
     Analytics();
+    ~Analytics();
 };
 
 }  // namespace analytics
