@@ -6,11 +6,13 @@
 #include "utils/config_helper.hpp"
 #include "borealis/core/logger.hpp"
 #include "bilibili.h"
+#include "borealis/core/i18n.hpp"
 
-MineCollectionRequest::MineCollectionRequest() {}
+using namespace brls::literals;
 
-void MineCollectionRequest::onCollectionList(
-    const bilibili::CollectionListResultWrapper &result) {}
+MineCollectionRequest::MineCollectionRequest() = default;
+
+void MineCollectionRequest::onCollectionList(const bilibili::CollectionListResultWrapper &result) {}
 
 void MineCollectionRequest::onError(const std::string &error) {}
 
@@ -22,16 +24,19 @@ void MineCollectionRequest::requestData(bool refresh) {
     }
 
     if (hasMore) {
-        auto userID = ProgramConfig::instance().getUserID();
-        this->requestCollectionList(userID, index);
+        auto mid = ProgramConfig::instance().getUserID();
+        if (mid.empty() || mid == "0") {
+            this->onError("wiliwili/home/common/no_login"_i18n);
+            return;
+        }
+        this->requestCollectionList(mid, index);
     }
 }
 
-void MineCollectionRequest::requestCollectionList(std::string &mid, int i,
-                                                  int num) {
+void MineCollectionRequest::requestCollectionList(std::string &mid, int i, int num) {
     CHECK_AND_SET_REQUEST
-    bilibili::BilibiliClient::get_my_collection_list(
-        mid, i, num,
+    BILI::get_my_collection_list(
+        mid, i, num, requestType,
         [this](const bilibili::CollectionListResultWrapper &result) {
             if (index != result.index) {
                 brls::Logger::error(
@@ -45,8 +50,11 @@ void MineCollectionRequest::requestCollectionList(std::string &mid, int i,
             this->onCollectionList(result);
             UNSET_REQUEST
         },
-        [this](const std::string &error) {
+        [this](BILI_ERR) {
             this->onError(error);
             UNSET_REQUEST
         });
 }
+void MineCollectionRequest::setRequestType(int type) { requestType = type; }
+
+int MineCollectionRequest::getRequestType() { return requestType; }

@@ -10,10 +10,10 @@
             height="100%">
         <brls:Image
                 id="video/card/picture"
-                backgroundColor="@theme/color/grey_1"
                 scalingType="fill"
                 width="30%"
                 height="100%"
+                image="@res/pictures/video-card-bg.png"
                 cornerRadius="4"/>
 
         <brls:Box
@@ -46,10 +46,10 @@
             <brls:Label
                     id="video/card/label/bottom"
                     positionType="absolute"
-                    positionRight="0"
+                    positionRight="8"
+                    positionBottom="8"
                     textColor="#FFFFFF"
-                    fontSize="16"
-                    text=""/>
+                    fontSize="16"/>
         </brls:Box>
     </brls:Box>
 
@@ -76,7 +76,7 @@
                         textColor="@theme/font/grey"/>
             </brls:Box>
 
-            <brls:Label
+            <TextBox
                     wireframe="false"
                     grow="1"
                     id="video/card/label/title"
